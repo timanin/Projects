@@ -53,7 +53,6 @@ class ProgressBar(object):
         while done < size:
             done = self.downloader.downloaded
             progress = int(done * 100 / size)
-            # print('Progress: {:d}%'.format(progress), end='\r', flush=True)
             hashes = '#' * int(progress / 2)
             print('Progress: {:s} ({:d}%)'.format(hashes, progress),
                   end='\r', flush=True)

@@ -34,7 +34,7 @@ class Downloader(object):
 
 
 class ProgressBar(object):
-    """Progress bar as a delagate"""
+    """Progress bar as a delegate"""
 
     def __init__(self, url, filename):
         """Initialiser"""

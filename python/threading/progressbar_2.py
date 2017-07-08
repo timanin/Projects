@@ -9,66 +9,54 @@ from time import sleep
 import requests
 
 
-class Downloader(object):
-    """The thing that downloads"""
-
-    def __init__(self, url, filename):
-        """Initialiser"""
-        self.url = url
-        self.filename = filename
-        self.downloaded = 0
-        self.request = None
-
-    def download(self):
-        """Starts the download"""
-        self.request = requests.get(self.url, stream=True)
-        with open(self.filename, 'wb') as file:
-            for chunk in self.request.iter_content(chunk_size=128):
-                file.write(chunk)
-                self.downloaded += 128
-
-    def get_size(self):
-        """Checks the remote file size"""
-        req = requests.head(self.url)
-        return int(req.headers['Content-Length'])
+downloaded = 0
 
 
-class ProgressBar(object):
-    """Progress bar as a delegate"""
+def download(url, filename):
+    """Downloads the specified URL into filename."""
+    global downloaded
+    req = requests.get(url, stream=True)
+    with open(filename, 'wb') as file:
+        for chunk in req.iter_content(chunk_size=128):
+            file.write(chunk)
+            downloaded += 128
 
-    def __init__(self, url, filename):
-        """Initialiser"""
-        self.downloader = Downloader(url, filename)
-        self.threads = []
 
-    def download(self):
-        """Starts the download"""
-        self.downloader.download()
+def get_size(url):
+    """Checks the remote file size."""
+    req = requests.head(url)
+    return int(req.headers['Content-Length'])
 
-    def check_progress(self):
-        """Prints the download progress"""
-        size = self.downloader.get_size()
 
-        done = 0
-        while done < size:
-            done = self.downloader.downloaded
-            progress = int(done * 100 / size)
-            hashes = '#' * int(progress / 2)
-            print('Progress: {:s} ({:d}%)'.format(hashes, progress),
-                  end='\r', flush=True)
-            sleep(1)
-        print('')
+def check_progress(url):
+    """Prints the download progress."""
+    size = get_size(url)
 
-    def run(self):
-        """Main method"""
-        thread1 = threading.Thread(target=self.download)
-        self.threads.append(thread1)
+    done = 0
+    while done < size:
+        done = downloaded
+        progress = int(done * 100 / size)
+        hashes = '#' * int(progress / 2)
+        print('Progress: {:s} ({:d}%)'.format(hashes, progress),
+              end='\r', flush=True)
+        sleep(1)
+    print('')
 
-        thread2 = threading.Thread(target=self.check_progress)
-        self.threads.append(thread2)
 
-        thread1.start()
-        thread2.start()
+def download_with_progress(url, filename):
+    """
+    Runs two threads: one to download and another to observe and print
+    out the progress.
+    """
+
+    threads = []
+    thread1 = threading.Thread(target=download, args=(url, filename))
+    threads.append(thread1)
+    thread2 = threading.Thread(target=check_progress, args=(url,))
+    threads.append(thread2)
+
+    thread1.start()
+    thread2.start()
 
 
 def main():
@@ -83,9 +71,7 @@ def main():
         f=filename
     )
 
-    downloader = ProgressBar(url, filename)
-
-    downloader.run()
+    download_with_progress(url, filename)
 
 
 if __name__ == '__main__':

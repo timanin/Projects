@@ -5,6 +5,23 @@ download in progress. The progress bar will be on a separate thread
 and will communicate with the main thread using delegates."""
 
 import requests
+from decorator import decorator
+
+
+def print_progress(percent):
+    """Prints progress to stdout."""
+    hashes = '#' * int(percent / 2)
+    print('Progress: {:s} ({:d}%)'.format(hashes, percent),
+          end='\r', flush=True)
+    if percent == 100:
+        print('')
+
+
+@decorator
+def download_decorator(inner_func, url, filename):
+    """Progress printing decorator."""
+    for i in inner_func(url, filename):
+        print_progress(i)
 
 
 def get_size(url):
@@ -13,6 +30,7 @@ def get_size(url):
     return int(req.headers['Content-Length'])
 
 
+@download_decorator
 def download(url, filename):
     """Downloads the specified URL into filename."""
     downloaded = 0
@@ -26,22 +44,12 @@ def download(url, filename):
             yield percent_downloaded
 
 
-def print_progress(percent):
-    """Prints progress to stdout."""
-    hashes = '#' * int(percent / 2)
-    print('Progress: {:s} ({:d}%)'.format(hashes, percent),
-          end='\r', flush=True)
-    if percent == 100:
-        print('')
-
-
 def make_url(domain_name, query_path, filename):
     """Return a full URL."""
     return 'https://{d}/{q}/{f}'.format(
         d=domain_name,
         q=query_path,
-        f=filename
-    )
+        f=filename)
 
 
 def main():
@@ -51,11 +59,9 @@ def main():
     url = make_url(
         'download.skype.com',
         'macosx/26d34dde05a09c44a8a29fa28eb15940',
-        filename
-    )
+        filename)
 
-    for i in download(url, filename):
-        print_progress(i)
+    download(url, filename)
 
 if __name__ == '__main__':
     main()
